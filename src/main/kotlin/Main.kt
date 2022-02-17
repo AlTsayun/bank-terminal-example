@@ -12,55 +12,54 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import model.Client
+import java.util.UUID
 
 typealias CallableComposable = @Composable () -> Unit
+typealias IdToListDetailsItem = Map<UUID, ListDetailsItem>
 
 @Composable
 @Preview
 fun App() {
-    var list: Map<Int, ListDetailsItem> by remember {
-        mutableStateOf(
-                listOf(1, 2, 3, 4)
-                    .map {
-                        val client = getClient(it)
-                        ListDetailsItem(it, @Composable { ClientListItemView(client) }, @Composable { ClientDetailsView(client) })
+    var items: List<Client> by remember { mutableStateOf(getClients()) }
+    val idToItem = items
+        .map { it ->
+            ListDetailsItem(it.id,
+                @Composable { ClientListItemView(it) },
+                @Composable {
+                    ClientDetailsView(it) { updatedItem ->
+                        items = items.map {
+                            if (it.id == updatedItem.id) {
+                                updatedItem
+                            } else {
+                                it
+                            }
+                        }
                     }
-                    .associateBy { it.id }
-        )
-    }
+                }
+            )
+        }
+        .associateBy { it.id }
+
     MaterialTheme {
         Row {
-            ListWithDetails(list, true)
+            ListWithDetails(idToItem, true)
         }
     }
 }
 
-//@Composable
-//fun BuildMyAwesomeForm(
-//    onClick: (EasyForms) -> Unit,
-//) {
-//    // BuildEasyForms fun provided by EasyForms
-//    BuildEasyForms { easyForm ->
-//        Column {
-//            // your Composables
-//            LoginButton(easyForms) { onClick(easyForms) }
-//        }
-//    }
-//}
-
 @Composable
 fun ListWithDetails(
-    items: Map<Int, ListDetailsItem>,
+    idToItem: IdToListDetailsItem,
     showBothPanes: Boolean
 ) {
-    var selectedItemId: Int? by remember { mutableStateOf(null) }
+    var selectedItemId: UUID? by remember { mutableStateOf(null) }
     if (showBothPanes) {
         Row {
-            List(items.values.map { it.listItem }) {
+            List(idToItem.values.map { it.listItem }) {
                 selectedItemId = it.id
             }
-            Details(selectedItemId?.let { items[it]?.detailsItem } )
-//            Text(selectedItemId.toString())
+            Details(selectedItemId?.let { idToItem[it]?.detailsItem } )
         }
     } else {
 
@@ -105,7 +104,7 @@ fun ItemRow(
 ) {
     Row(
         Modifier
-            .clickable { onSelectionChange() }
+            .clickable(onClick = onSelectionChange)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         content.invoke()
@@ -119,7 +118,7 @@ fun main() = application {
 }
 
 open class ListDetailsItem(
-    val id: Int,
+    val id: UUID,
     listItemContent: CallableComposable,
     detailsContent: CallableComposable
 ) {
@@ -127,14 +126,14 @@ open class ListDetailsItem(
     val detailsItem: DetailsItem = DetailsItem(id, detailsContent)
 }
 
-class ListItem(val id: Int, private val content: CallableComposable) {
+class ListItem(val id: UUID, private val content: CallableComposable) {
     @Composable
     fun place() {
         content.invoke()
     }
 }
 
-class DetailsItem(val id: Int, private val content: CallableComposable) {
+class DetailsItem(val id: UUID, private val content: CallableComposable) {
     @Composable
     fun place() {
         content.invoke()

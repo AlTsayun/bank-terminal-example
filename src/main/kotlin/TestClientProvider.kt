@@ -9,7 +9,7 @@ fun getClient(id: Int): Client {
         surname = "Surname $id",
         name = "Name $id",
         patronymic = "Patronymic $id",
-        birthDate = Date.valueOf("2000-01-01"),
+        birthDate = Date.valueOf("200$id-01-01"),
         sex = Sex.MALE,
         passportSeries = "MP",
         passportNumber = "1234567",
@@ -29,4 +29,10 @@ fun getClient(id: Int): Client {
         monthlyIncome = "50000",
         isMilitaryServiceSubject = false
     )
+}
+
+fun getClients(): MutableList<Client> {
+    return (0..5).asIterable()
+        .map { getClient(it) }
+        .toMutableList()
 }
