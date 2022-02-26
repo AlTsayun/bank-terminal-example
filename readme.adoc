@@ -1,0 +1,35 @@
+= Good choice
+
+== Local deployment
+
+=== Create database container
+
+----
+docker create `
+  --name bank-db-postgres `
+  -e POSTGRES_PASSWORD=postgres-pass `
+  -e POSTGRES_INITDB_ARGS="--encoding=UTF8" `
+  -p 5432:5432 `
+  -v $(pwd)/local/initdb:/docker-entrypoint-initdb.d `
+  bitnami/postgresql:14.2.0-debian-10-r13
+----
+
+=== Start database container
+
+----
+docker start bank-db-postgres
+----
+
+== Development
+
+=== Build application
+
+----
+./gradlew build -x test
+----
+
+=== Test application
+
+----
+./gradlew test
+----

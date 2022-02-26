@@ -1,5 +1,6 @@
 package model
 
+import java.math.BigDecimal
 import java.sql.Date
 import java.util.*
 
@@ -25,8 +26,7 @@ data class Client(
     val citizenship: Citizenship,
     val disabilityStatus: DisabilityStatus,
     val isRetiree: Boolean,
-    // TODO: change type to appropriate money type
-    val monthlyIncome: String?,
+    val monthlyIncome: BigDecimal?,
     val isMilitaryServiceSubject: Boolean
 )
 

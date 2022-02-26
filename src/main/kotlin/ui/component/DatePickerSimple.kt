@@ -1,12 +1,8 @@
 package ui.component
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -18,7 +14,8 @@ fun DatePicker(
     value: Date,
     onValueChange: (Date) -> Unit,
     from: Date,
-    to: Date
+    to: Date,
+    label: @Composable (() -> Unit)? = null
 ) {
 
     fun getCalendarForDate(date: Date) : Calendar {
@@ -91,32 +88,29 @@ fun DatePicker(
         val calendar = getCalendarForDate(year, month, dayOfMonth)
         onValueChange(calendar.time)
     }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        label?.invoke()
 
-    Row(
-        modifier = Modifier.fillMaxWidth()
-    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
 
-        Row {
-            Text("Year:")
-            Spacer(modifier = Modifier.width(8.dp))
-            DatePickerItemDropdownMenu(
+            DropdownSelectionButton(
                 value = getOperationalYear(),
-                itemRange = getAvailableYears(),
-                onValueChange = {
+                options = getAvailableYears(),
+                onOptionClicked = {
                     onOperationalTimeChange(year = it)
-                }
-            )
-        }
+                },
+                label = { Text("Year:") }
+            ) {
+                Text(it.toString())
+            }
 
-        Spacer(modifier = Modifier.width(16.dp))
-
-        Row {
-            Text("Month:")
-            Spacer(modifier = Modifier.width(8.dp))
-            DatePickerItemDropdownMenu(
+            DropdownSelectionButton(
                 value = getOperationalMonth(),
-                itemRange = getAvailableMonths(),
-                onValueChange = {
+                options = getAvailableMonths(),
+                onOptionClicked = {
 
                     // if month with fewer than operationalDayOfMonth days selected need to adjust dayOfMonth
                     val lastAvailableDayOfMonth = YearMonth
@@ -130,62 +124,21 @@ fun DatePicker(
                     }
 
                     onOperationalTimeChange(month = it, dayOfMonth = dayOfMonth)
-                }
-            )
-        }
+                },
+                label = { Text("Month:") }
+            ) {
+                Text(it.toString())
+            }
 
-        Spacer(modifier = Modifier.width(16.dp))
-
-        Row {
-            Text("Date:")
-            Spacer(modifier = Modifier.width(8.dp))
-            DatePickerItemDropdownMenu(
+            DropdownSelectionButton(
                 value = getOperationalDayOfMonth(),
-                itemRange = getAvailableDayOfMonth(),
-                onValueChange = {
+                options = getAvailableDayOfMonth(),
+                onOptionClicked = {
                     onOperationalTimeChange(dayOfMonth = it)
-                }
-            )
-        }
-    }
-}
-
-@Composable
-private fun DatePickerItemDropdownMenu(
-    value: Int,
-    itemRange: IntRange,
-    onValueChange: (Int) -> Unit,
-) {
-    val (isMenuExpanded, setMenuExpanded) = remember { mutableStateOf(false) }
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.clickable(onClick = {
-            setMenuExpanded(true)
-        })
-    ) {
-        Text(value.toString())
-        Spacer(Modifier.width(4.dp))
-        Icon(
-            imageVector = Icons.Filled.KeyboardArrowDown,
-            contentDescription = null,
-            modifier = Modifier.size(16.dp)
-        )
-    }
-    DropdownMenu(
-        expanded = isMenuExpanded,
-        onDismissRequest = {
-            setMenuExpanded(false)
-        }
-    ) {
-        itemRange.forEach {
-            DropdownMenuItem(onClick = {
-                setMenuExpanded(false)
-                onValueChange(it)
-            }) {
-                Text(
-                    text = it.toString()
-                )
+                },
+                label = { Text("Date:") }
+            ) {
+                Text(it.toString())
             }
         }
     }
@@ -198,6 +151,7 @@ fun DatePicker(
     modifier: Modifier = Modifier,
     from: Date,
     to: Date,
+    label: @Composable (() -> Unit)? = null,
     helperMessage: @Composable (() -> Unit)? = null,
     errorMessage: @Composable (() -> Unit)? = null,
     isError: Boolean,
@@ -206,7 +160,7 @@ fun DatePicker(
     Column(
         modifier = modifier
     ) {
-        DatePicker(value, onValueChange, from, to)
+        DatePicker(value, onValueChange, from, to, label)
         Box(
             modifier = Modifier
                 .requiredHeight(16.dp)

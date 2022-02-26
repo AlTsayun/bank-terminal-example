@@ -4,7 +4,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
+import androidx.compose.material.Button
+import androidx.compose.material.Icon
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,20 +19,28 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import model.Client
-import java.util.UUID
-
-typealias CallableComposable = @Composable () -> Unit
-typealias IdToListDetailsItem = Map<UUID, ListDetailsItem>
 
 @Composable
 @Preview
 fun App() {
     var items: List<Client> by remember { mutableStateOf(getClients()) }
-    val idToItem = items
-        .map { it ->
-            ListDetailsItem(it.id,
-                @Composable { ClientListItemView(it) },
-                @Composable {
+
+    MaterialTheme {
+        Row {
+            ListWithDetails(
+                items = items.associateBy { it.id },
+                onItemDeleteClick = {
+                    val mutableList = items.toMutableList()
+                    mutableList.remove(it)
+                    items = mutableList
+                },
+                onNewClick = {
+                    val mutableList = items.toMutableList()
+                    mutableList.add(getClient(items.size))
+                    items = mutableList
+                },
+                listItemContent = { ClientListItemView(it) },
+                detailsItemContent = {
                     ClientDetailsView(it) { updatedItem ->
                         items = items.map {
                             if (it.id == updatedItem.id) {
@@ -39,75 +53,93 @@ fun App() {
                 }
             )
         }
-        .associateBy { it.id }
-
-    MaterialTheme {
-        Row {
-            ListWithDetails(idToItem, true)
-        }
     }
 }
 
 @Composable
-fun ListWithDetails(
-    idToItem: IdToListDetailsItem,
-    showBothPanes: Boolean
+fun <T, ID> ListWithDetails(
+    items: Map<ID, T>,
+    onItemClick: ((T) -> Unit)? = null,
+    onItemDeleteClick: ((T) -> Unit)? = null,
+    onNewClick: () -> Unit,
+    listItemContent: @Composable (T) -> Unit,
+    detailsItemContent: @Composable (T) -> Unit
 ) {
-    var selectedItemId: UUID? by remember { mutableStateOf(null) }
-    if (showBothPanes) {
-        Row {
-            List(idToItem.values.map { it.listItem }) {
-                selectedItemId = it.id
-            }
-            Details(selectedItemId?.let { idToItem[it]?.detailsItem } )
-        }
-    } else {
+    var selectedItemId: ID? by remember { mutableStateOf(null) }
+    selectedItemId = selectedItemId?.takeIf { items.containsKey(selectedItemId) }
 
+    Row(modifier = Modifier.fillMaxWidth()) {
+        List(
+            listItems = items.entries.toList(),
+            onItemContentClick = { item ->
+                selectedItemId = item.key
+                onItemClick?.invoke(item.value)
+            },
+            onItemDeleteClick = { item ->
+                if (selectedItemId == item.key) {
+                    selectedItemId = null
+                }
+                onItemDeleteClick?.invoke(item.value)
+            },
+            onNewItemClick = onNewClick,
+            itemContent = { listItemContent(it.value) }
+        )
+        Details(
+            selectedItemId?.let {
+                items[it]
+            }?.let {
+                { detailsItemContent(it) }
+            }
+        )
     }
 }
 
 @Composable
 fun Details(
-    content: DetailsItem? = null
+    content: (@Composable () -> Unit)? = null
 ) {
     if (content == null) {
-        Box(contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
             Text(
                 textAlign=TextAlign.Center,
                 text="No item selected."
             )
         }
     } else {
-        content.place()
+        content.invoke()
     }
 }
 
 
 @Composable
-fun List(
-    items: List<ListItem>,
-    onSelectionChanged: (ListItem) -> Unit
+fun <T> List(
+    listItems: List<T>,
+    onItemContentClick: (T) -> Unit,
+    onItemDeleteClick: (T) -> Unit,
+    onNewItemClick: () -> Unit,
+    itemContent: @Composable (T) -> Unit
 ) {
-    LazyColumn(Modifier.fillMaxHeight()) {
-        items(items) { item ->
-            ItemRow({ onSelectionChanged(item) }) @Composable {
-                item.place()
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        LazyColumn {
+            items(listItems) {
+                ListItem(
+                    onContentClick = { onItemContentClick(it) },
+                    onDeleteClick = { onItemDeleteClick(it) }
+                ) {
+                    itemContent(it)
+                }
             }
         }
-    }
-}
-
-@Composable
-fun ItemRow(
-    onSelectionChange: () -> Unit,
-    content: CallableComposable
-) {
-    Row(
-        Modifier
-            .clickable(onClick = onSelectionChange)
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        content.invoke()
+        Button(onClick = onNewItemClick) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
+            )
+        }
     }
 }
 
@@ -117,25 +149,22 @@ fun main() = application {
     }
 }
 
-open class ListDetailsItem(
-    val id: UUID,
-    listItemContent: CallableComposable,
-    detailsContent: CallableComposable
-) {
-    val listItem: ListItem = ListItem(id, listItemContent)
-    val detailsItem: DetailsItem = DetailsItem(id, detailsContent)
-}
-
-class ListItem(val id: UUID, private val content: CallableComposable) {
-    @Composable
-    fun place() {
-        content.invoke()
-    }
-}
-
-class DetailsItem(val id: UUID, private val content: CallableComposable) {
-    @Composable
-    fun place() {
-        content.invoke()
+@Composable
+fun ListItem(onContentClick: () -> Unit, onDeleteClick: () -> Unit, content: @Composable () -> Unit) {
+    Row {
+        Box(
+            modifier = Modifier.clickable(onClick = onContentClick)
+        ) {
+            content.invoke()
+        }
+        Box(
+            modifier = Modifier.clickable(onClick = onDeleteClick)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
+            )
+        }
     }
 }

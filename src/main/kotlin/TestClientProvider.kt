@@ -1,10 +1,10 @@
 import model.*
+import java.math.BigDecimal
 import java.sql.Date
 import java.util.*
 
 fun getClient(id: Int): Client {
     return Client(
-//        id = UUID.fromString("00000000-0000-0000-0000-000000000000"),
         id = UUID.randomUUID(),
         surname = "Surname $id",
         name = "Name $id",
@@ -19,14 +19,14 @@ fun getClient(id: Int): Client {
         placeOfBirth = "REPUBLIC OF BELARUS",
         localitiesOfResidence = listOf("Brest", "Vitebsk", "Gomel", "Grodno", "Minsk", "Mogilev"),
         residenceAddress = "residence address",
-        homePhoneNumber = "+375(00)000-00-00",
-        mobilePhoneNumber = "+375(00)000-00-00",
+        homePhoneNumber = "375000000000",
+        mobilePhoneNumber = "375000000000",
         maritalStatus = MaritalStatus.SINGLE,
         email = "email@mail.com",
         citizenship = Citizenship.BELARUS,
         disabilityStatus = DisabilityStatus.UNLIMITED,
         isRetiree = false,
-        monthlyIncome = "50000",
+        monthlyIncome = BigDecimal("50000"),
         isMilitaryServiceSubject = false
     )
 }
